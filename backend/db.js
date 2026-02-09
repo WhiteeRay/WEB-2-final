@@ -2,16 +2,11 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-/* connection to db */
-mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => console.log('MongoDB connected'))
-  .catch(err => console.log(err));
+mongoose.connect(process.env.MONGODB_URI);
 
 const userSchema = new Schema({
     email: {type:String, required:true, unique:true},
-    password: {type:String, required:true, minlength:8},
+    password: {type:String, required:true},
     username: {type:String, required:true, unique:true}
 });
 
@@ -22,22 +17,20 @@ const blogSchema = new Schema({
         name: String,
         artist: String,
         image: String,
-        url: {type:String, required:true}
+        url: String
     },
     author: {type:Schema.Types.ObjectId, ref:'User', required:true},
-    createdAt: {type:Date, default:Date.now},
-    updatedAt: {type:Date, default:Date.now}
-});
-
-const commentSchema = new Schema({
-    post: {type:Schema.Types.ObjectId, ref:'Blog', required:true},
-    author: {type: Schema.Types.ObjectId, ref:'User', required:true},
-    text: {type:String, required:true},
     createdAt: {type:Date, default:Date.now}
 });
 
+const Comment = mongoose.model('Comment', new Schema({
+    post: {type:Schema.Types.ObjectId, ref:'Blog'},
+    author: {type: Schema.Types.ObjectId, ref:'User'},
+    text: {type:String, required:true},
+    createdAt: {type:Date, default:Date.now}
+}));
+
 const User = mongoose.model('User', userSchema);
 const Blog = mongoose.model('Blog', blogSchema);
-const Comment = mongoose.model('Comment', commentSchema);
 
 module.exports = {User, Blog, Comment};

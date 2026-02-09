@@ -27,7 +27,7 @@ A web application built with Node.js, Express.js, and MongoDB where users can sh
     ```
 3. Create a .env file in the backend folder with the following variables:
     ```plaintext
-    MONGODB_URI=<your-mongodb-connection-string>
+    MONGODB_URI=mongodb://localhost:27017/
     JWT_SECRET=<your-secret-key>
     SPOTIFY_CLIENT_ID=<your-spotify-client-id>
     SPOTIFY_CLIENT_SECRET=<your-spotify-client-secret>

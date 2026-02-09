@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const Validator = require('validatorjs');
 const {User} = require('./db');
 
-const secret = process.env.jwt_secret_key;
+const secret = process.env.JWT_SECRET_KEY || process.env.jwt_secret_key;
 
 const authMiddleware = async (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
@@ -15,65 +15,45 @@ const authMiddleware = async (req, res, next) => {
         req.user = decoded;
         next();
     } catch (err) {
-        res.status(401).json({message:'Invalid token: ' + err.message});
+        res.status(401).json({message:'Invalid token'});
     }
 };
 
 const register = async (req, res) => {
     try {
         const {email, password, username} = req.body;
-
-        const validation = new Validator({email, password, username}, {
+        const validation = new Validator(req.body, {
             email: 'required|email',
             password: 'required|min:8',
             username: 'required'
         });
 
-        if (validation.fails()) {
-            return res.status(400).json({message: 'Validation failed', errors: validation.errors.all()});
-        }
+        if (validation.fails()) return res.status(400).json({errors: validation.errors.all()});
 
         const existingUser = await User.findOne({$or: [{email}, {username}]});
-        if (existingUser) {
-            return res.status(400).json({message:'Email or username already exists'});
-        }
+        if (existingUser) return res.status(400).json({message:'User exists'});
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = new User({email, password: hashedPassword, username});
         await user.save();
-        res.status(201).json({message:'User registered successfully'});
+        res.status(201).json({message:'Success'});
     } catch (error) {
-        res.status(500).json({message:'Failed to register user: ' + error.message});
+        res.status(500).json({message: error.message});
     }
 };
 
 const login = async (req, res) => {
     try {
         const {email, password} = req.body;
-
-        const validation = new Validator({email, password}, {
-            email: 'required|email',
-            password: 'required|min:8'
-        });
-
-        if (validation.fails()) {
-            return res.status(400).json({message: 'Validation failed', errors: validation.errors.all()});
-        }
-
         const user = await User.findOne({email});
-        if (!user) {
-            return res.status(401).json({message: 'Invalid email or password'});
-        }
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(401).json({message: 'Invalid email or password'});
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return res.status(401).json({message: 'Invalid credentials'});
         }
 
         const token = jwt.sign({id: user._id, username: user.username}, secret, {expiresIn: '1h'});
         res.json({token});
     } catch (error) {
-        res.status(500).json({message:'Failed to login: ' + error.message});
+        res.status(500).json({message: error.message});
     }
 };
 
